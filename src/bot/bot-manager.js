@@ -76,6 +76,14 @@ export class BotManager {
     this._tmpRight = new THREE.Vector3();
     this._tmpUp = new THREE.Vector3();
     this._tmpSpreadDir = new THREE.Vector3();
+    // Bot 射击临时向量 (减少分配)
+    this._tmpPlayerCenter = new THREE.Vector3();
+    this._tmpToPlayer = new THREE.Vector3();
+    this._tmpClosestPoint = new THREE.Vector3();
+    this._tmpLosDir = new THREE.Vector3();
+    this._tmpEyePos = new THREE.Vector3();
+    this._tmpForwardDir = new THREE.Vector3();
+    this._tmpSpreadDir = new THREE.Vector3();
   }
 
   /**
@@ -283,43 +291,33 @@ export class BotManager {
     const now = performance.now() / 1000;
     if (now - bot._lastShotTime < BOT_WEAPON_FIRE_RATE) return;
     bot._lastShotTime = now;
-
-    if (!player || player.health <= 0) return;
     const eyePos = this._getBotEyePosition(bot);
     const forward = this._getBotForward(bot);
     const spreadMultiplier = action.spreadMultiplier || 0.3;
     const spreadDir = this._applySpread(forward, spreadMultiplier);
-    // 玩家胸部中心
-    const playerCenter = new THREE.Vector3(
+    // 玩家胸部中心 (复用临时向量)
+    const playerCenter = this._tmpPlayerCenter.set(
       player.position.x,
       player.position.y + 0.9,
       player.position.z
     );
 
-    // Bot 到玩家的向量
-    const toPlayer = new THREE.Vector3().subVectors(playerCenter, eyePos);
+    // Bot 到玩家的向量 (复用临时向量)
+    const toPlayer = this._tmpToPlayer.subVectors(playerCenter, eyePos);
     const playerDist = toPlayer.length();
-
     if (playerDist > MAX_SHOOT_DISTANCE || playerDist < 0.1) return;
-
     // 射线方向与玩家方向的点积 (玩家是否在射线前方)
     const projection = spreadDir.dot(toPlayer);
     if (projection <= 0) return;
-
-    // 玩家到射线的垂直距离
-    const closestPoint = eyePos.clone().addScaledVector(spreadDir, projection);
+    // 玩家到射线的垂直距离 (复用临时向量)
+    const closestPoint = this._tmpClosestPoint.copy(eyePos).addScaledVector(spreadDir, projection);
     const perpDist = closestPoint.distanceTo(playerCenter);
-
-    // 命中判定: 玩家身体半径 (~0.5m) + 容差
     if (perpDist > 1.0) return;
 
-    // 视线遮挡检测
-    const losDir = toPlayer.clone().normalize();
+    // 视线遮挡检测 (复用临时向量)
+    const losDir = this._tmpLosDir.copy(toPlayer).normalize();
     const losHit = physics.raycast(eyePos, losDir, playerDist);
     if (losHit && losHit.distance < playerDist - 0.5) return;
-
-    // 命中! 根据准度计算伤害
-    const accuracyFactor = 1.0 - spreadMultiplier * 0.5;
     const damage = Math.round(BOT_WEAPON_DAMAGE * accuracyFactor);
     player.takeDamage(damage);
   }

@@ -32,6 +32,8 @@ export class GameLoop {
     this.player = null;
     /** @type {object|null} */
     this.physics = null;
+    /** @type {Array<function(number): void>} 帧更新回调 */
+    this._updateCallbacks = [];
 
     this._running = false;
     this._rafId = null;
@@ -66,9 +68,25 @@ export class GameLoop {
     this._lastTime = performance.now();
     this._fpsTime = this._lastTime;
     this._frameCount = 0;
-
     this._tick = this._tick.bind(this);
     this._rafId = requestAnimationFrame(this._tick);
+  }
+
+  /**
+   * 注册帧更新回调。
+   * @param {function(number): void} callback — 接收 dt (秒)
+   */
+  onUpdate(callback) {
+    this._updateCallbacks.push(callback);
+  }
+
+  /**
+   * 移除帧更新回调。
+   * @param {function(number): void} callback
+   */
+  offUpdate(callback) {
+    const idx = this._updateCallbacks.indexOf(callback);
+    if (idx !== -1) this._updateCallbacks.splice(idx, 1);
   }
 
   /** 停止游戏循环 */
@@ -105,15 +123,14 @@ export class GameLoop {
 
     // ── 帧逻辑 ──────────────────────────────────────
     // 1. 输入更新 (重置鼠标 delta)
-    this.input.update(dt);
+    if (this.input) this.input.update(dt);
 
-    // 2. 玩家更新 (移动、跳跃、重力、碰撞)
-    this.player.update(dt, this.input);
+    // 2. 调用所有注册的帧更新回调
+    for (const cb of this._updateCallbacks) {
+      try { cb(dt); } catch (e) { console.error('[GameLoop] update callback error:', e); }
+    }
 
-    // 3. 物理更新 (预留)
-    this._physicsUpdate(dt);
-
-    // 4. 渲染
+    // 3. 渲染
     this.renderer.render(this.scene, this.camera);
   }
 
