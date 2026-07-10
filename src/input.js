@@ -140,8 +140,6 @@ export class InputManager {
       this._keys.set('Shift', true);
     }
   }
-    this._keys.set(e.code, true);
-  }
 
   _onKeyUp(e) {
     this._keys.set(e.code, false);
@@ -151,8 +149,6 @@ export class InputManager {
         this._keys.set('Shift', false);
       }
     }
-  }
-    this._keys.set(e.code, false);
   }
 
   _onMouseMove(e) {
