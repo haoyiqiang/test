@@ -212,12 +212,6 @@ export class HUD {
       this._root = null;
     }
   }
-    document.removeEventListener('keydown', this._onKeyDown);
-    if (this._root) {
-      this._root.remove();
-      this._root = null;
-    }
-  }
 
   // ── 私有: 创建 DOM 结构 ───────────────────────────────
 

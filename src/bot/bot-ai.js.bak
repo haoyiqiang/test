@@ -360,16 +360,17 @@ export class BotAI {
     // 选择新的巡逻目标
     const currentWp = navmesh.getNearestWaypoint(bot.position);
     let target;
-    let attempts = 0;
+      let attempts = 0;
     do {
       target = navmesh.getRandomWaypoint();
       attempts++;
-    } while (target && currentWp && target.id === currentWp.id && attempts < 10);
-    bot.navTarget = {
-      x: target.position.x,
-      y: target.position.y,
-      z: target.position.z,
-    };
+      } while (target && currentWp && target.id === currentWp.id && attempts < 10);
+      bot.navTarget = {
+        x: target.position.x,
+        y: target.position.y,
+        z: target.position.z,
+      };
+    }
 
     return { action: 'patrol', phase: 'moving' };
   }
