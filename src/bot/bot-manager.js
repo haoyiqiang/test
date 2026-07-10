@@ -18,7 +18,12 @@ const BOT_WEAPON_SPREAD = 0.03;
 
 /** Bot 武器射击间隔 (秒) */
 const BOT_WEAPON_FIRE_RATE = 0.1;
-
+/** 世界坐标系常量 */
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const WORLD_RIGHT = new THREE.Vector3(1, 0, 0);
+/** 世界坐标系常量 */
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const WORLD_RIGHT = new THREE.Vector3(1, 0, 0);
 // ── 材质缓存 ──────────────────────────────────────────────
 
 /** @type {Map<string, THREE.MeshStandardMaterial>} */
@@ -374,13 +379,10 @@ export class BotManager {
     if (spread <= 0) return direction.clone();
 
     const forward = direction.clone().normalize();
-    const worldUp = new THREE.Vector3(0, 1, 0);
-
-    const right = this._tmpRight;
-    if (Math.abs(forward.dot(worldUp)) > 0.999) {
-      right.crossVectors(forward, new THREE.Vector3(1, 0, 0)).normalize();
+    if (Math.abs(forward.dot(WORLD_UP)) > 0.999) {
+      right.crossVectors(forward, WORLD_RIGHT).normalize();
     } else {
-      right.crossVectors(forward, worldUp).normalize();
+      right.crossVectors(forward, WORLD_UP).normalize();
     }
     const up = this._tmpUp.crossVectors(right, forward).normalize();
 

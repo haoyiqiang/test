@@ -18,6 +18,9 @@ const MAX_SHOOT_DISTANCE = 200;
 
 /** 武器槽位数量 */
 const MAX_WEAPON_SLOTS = 5;
+/** 世界坐标系常量 (复用, 避免每帧分配) */
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const WORLD_RIGHT = new THREE.Vector3(1, 0, 0);
 
 export class WeaponSystem {
   /**
@@ -386,9 +389,9 @@ export class WeaponSystem {
     const forward = this._spreadForward.copy(direction).normalize();
     const right = this._spreadRight;
     if (Math.abs(forward.y) > 0.999) {
-      right.set(1, 0, 0).cross(forward).normalize();
+      right.crossVectors(forward, WORLD_RIGHT).normalize();
     } else {
-      right.set(0, 1, 0).cross(forward).normalize();
+      right.crossVectors(forward, WORLD_UP).normalize();
     }
     const up = this._spreadUp.crossVectors(right, forward).normalize();
 
