@@ -3,7 +3,9 @@ import { GameLoop } from 'csgo/game-loop.js';
 import { InputManager } from 'csgo/input.js';
 import { PlayerController } from 'csgo/player.js';
 import { PhysicsSystem } from 'csgo/physics.js';
+import { WeaponSystem } from 'csgo/weapon/weapon-system.js';
 
+import { WEAPONS } from 'csgo/weapon/weapon-data.js';
 // ── 初始化场景 ──────────────────────────────────────────
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -130,8 +132,28 @@ window.addEventListener('resize', () => {
 
 // ── 启动游戏循环 ──────────────────────────────────────
 
+// ── 武器系统 ──────────────────────────────────────────
+
+const weaponSystem = new WeaponSystem(camera, physics);
+
+// 控制台测试命令
+window.__weaponSystem = weaponSystem;
+window.__buyWeapon = (id) => {
+  const result = weaponSystem.buyWeapon(id);
+  console.log(result.message);
+};
+window.__listWeapons = () => {
+  console.table(
+    Object.entries(WEAPONS).map(([id, w]) => ({
+      id, name: w.name, type: w.type, damage: w.damage,
+      price: '$' + w.price, fireRate: w.fireRate + 'ms'
+    }))
+  );
+};
+
+// ── 启动游戏循环 ──────────────────────────────────────
 const loop = GameLoop.instance;
-loop.start({ renderer, scene, camera, input, player, physics });
+loop.start({ renderer, scene, camera, input, player, physics, weaponSystem });
 
 // FPS 显示更新
 const fpsDisplay = document.getElementById('fps-display');
