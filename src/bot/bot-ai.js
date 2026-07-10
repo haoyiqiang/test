@@ -94,6 +94,12 @@ export class BotAI {
     /** 是否正在巡逻等待 */
     this._patrolWaiting = false;
 
+    /** 上一帧是否在走路径 (用于巡逻等待触发) */
+    this._wasPathing = false;
+
+    /** 调查中是否已请求路径 (防止重复寻路) */
+    this._investigatePathRequested = false;
+
     /** 瞄准转向角速度 (度/秒) */
     this._aimTurnSpeed = 90;
 
@@ -161,7 +167,7 @@ export class BotAI {
     if (dist > this.difficulty.viewDistance) return false;
 
     // 2. 角度检查 (锥形视野)
-    const botForward = this._getForward(bot);
+    const botForward = this._getForward(bot).clone();
     const dirToEnemy = this._tmpDir.set(dx, dy, dz).normalize();
 
     const dot = botForward.dot(dirToEnemy);
@@ -289,31 +295,29 @@ export class BotAI {
    */
   _investigate(dt, bot) {
     this.state = 'investigate';
-
-    // 清除战斗状态
     this._reacting = false;
     this._reactionTimer = 0;
     this._burstCount = 0;
+    if (!soundPos) {
+      this._investigatePathRequested = false;
+      return { action: 'patrol', phase: 'idle' };
+    }
 
-    const soundPos = bot.heardSoundPosition;
-    // 如果已在走向声源，继续
+    // 如果正在走路径，继续
     if (bot.currentPath && bot.currentPath.length > 0) {
       return { action: 'investigate', phase: 'moving' };
     }
-    // 检查是否到达声源
-    const dx = soundPos.x - bot.position.x;
-    const dz = soundPos.z - bot.position.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
 
-    if (dist < 2.0) {
+    // 路径已完成 且 之前已请求过路径 → 到达
+    if (this._investigatePathRequested) {
+      this._investigatePathRequested = false;
       bot.heardSoundPosition = null;
-      bot.navTarget = null;
       return { action: 'investigate', phase: 'arrived' };
     }
 
-    // 设定导航目标
+    // 请求到声源的路径
     bot.navTarget = { x: soundPos.x, y: soundPos.y, z: soundPos.z };
-
+    this._investigatePathRequested = true;
     return { action: 'investigate', phase: 'moving' };
   }
 
@@ -329,51 +333,43 @@ export class BotAI {
    */
   _patrol(dt, bot, navmesh) {
     this.state = 'patrol';
-
-    // 清除战斗/调查状态
     this._reacting = false;
     this._reactionTimer = 0;
     this._burstCount = 0;
-
-    // 如果正在走路径，继续
     if (bot.currentPath && bot.currentPath.length > 0) {
+      this._wasPathing = true;
       return { action: 'patrol', phase: 'moving' };
     }
 
+    // 路径刚走完 — 开始等待
+    if (this._wasPathing) {
+      this._wasPathing = false;
+      this._patrolWaiting = true;
+      this._patrolWaitTimer = 1 + Math.random() * 2; // 1-3 秒
+      return { action: 'patrol', phase: 'waiting' };
+    }
     // 正在等待
     if (this._patrolWaiting) {
       this._patrolWaitTimer -= dt;
       if (this._patrolWaitTimer <= 0) {
         this._patrolWaiting = false;
+        // 等待结束，下个循环会选择新目标
       }
       return { action: 'patrol', phase: 'waiting' };
     }
-
-    // 到达巡逻点，开始等待
-    if (!bot.navTarget && (!bot.currentPath || bot.currentPath.length === 0)) {
-      this._patrolWaiting = true;
-      this._patrolWaitTimer = 1 + Math.random() * 2; // 1-3 秒
-      return { action: 'patrol', phase: 'waiting' };
-    }
-
     // 选择新的巡逻目标
-    if (!bot.navTarget) {
-      const currentWp = navmesh.getNearestWaypoint(bot.position);
-      let target;
+    const currentWp = navmesh.getNearestWaypoint(bot.position);
+    let target;
       let attempts = 0;
-
-      do {
-        target = navmesh.getRandomWaypoint();
-        attempts++;
+    do {
+      target = navmesh.getRandomWaypoint();
+      attempts++;
       } while (target && currentWp && target.id === currentWp.id && attempts < 10);
-
-      if (target) {
-        bot.navTarget = {
-          x: target.position.x,
-          y: target.position.y,
-          z: target.position.z,
-        };
-      }
+      bot.navTarget = {
+        x: target.position.x,
+        y: target.position.y,
+        z: target.position.z,
+      };
     }
 
     return { action: 'patrol', phase: 'moving' };
@@ -444,6 +440,8 @@ export class BotAI {
     this._burstTimer = 0;
     this._patrolWaitTimer = 0;
     this._patrolWaiting = false;
+    this._wasPathing = false;
+    this._investigatePathRequested = false;
   }
 
   /**

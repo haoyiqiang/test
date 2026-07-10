@@ -110,9 +110,9 @@ export class BotNavigation {
    * @returns {boolean}
    */
   isAtWaypoint(bot, waypoint, threshold = 1.0) {
-    const wx = waypoint.x ?? waypoint.x;
-    const wy = waypoint.y ?? waypoint.y;
-    const wz = waypoint.z ?? waypoint.z;
+    const wx = waypoint.x;
+    const wy = waypoint.y;
+    const wz = waypoint.z;
 
     const dx = bot.position.x - wx;
     const dy = bot.position.y - wy;
