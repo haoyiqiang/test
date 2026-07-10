@@ -21,9 +21,6 @@ const BOT_WEAPON_FIRE_RATE = 0.1;
 /** 世界坐标系常量 */
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const WORLD_RIGHT = new THREE.Vector3(1, 0, 0);
-/** 世界坐标系常量 */
-const WORLD_UP = new THREE.Vector3(0, 1, 0);
-const WORLD_RIGHT = new THREE.Vector3(1, 0, 0);
 // ── 材质缓存 ──────────────────────────────────────────────
 
 /** @type {Map<string, THREE.MeshStandardMaterial>} */
